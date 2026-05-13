@@ -1,0 +1,93 @@
+workflows:
+  ios_testflight:
+    name: iOS TestFlight (release/ios)
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: release/ios
+          include: true
+          source: true
+
+    environment:
+      flutter: stable
+      xcode: latest
+      groups:
+        - medisom_group
+        - app_store_connect
+      vars:
+        BUNDLE_ID: com.medisom.app.console
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.medisom.app.console
+
+    scripts:
+      - name: Flutter clean
+        script: |
+          flutter clean
+
+      - name: Flutter pub get
+        script: |
+          flutter pub get
+
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+
+      - name: Set up code signing in Xcode project
+        script: |
+          xcode-project use-profiles
+
+          echo "=== check generated export options ==="
+          ls -la /Users/builder/export_options.plist || true
+          /usr/libexec/PlistBuddy -c "Print" /Users/builder/export_options.plist || true
+
+      - name: Build IPA
+        script: |
+          set -e
+
+          BUILD_NUMBER=3
+          echo "Using BUILD_NUMBER=$BUILD_NUMBER"
+
+          flutter --version
+          flutter build ipa \
+            --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist \
+            -v
+            
+      - name: Inspect archive
+        script: |
+          echo "=== build/ios ==="
+          ls -la build/ios || true
+
+          echo "=== archives ==="
+          find build/ios/archive -maxdepth 3 -print || true
+
+          echo "=== ipa dir ==="
+          ls -la build/ios/ipa || true
+
+          echo "=== find ipa ==="
+          find build -maxdepth 6 -name "*.ipa" -print || true
+
+          echo "=== Info.plist inside xcarchive ==="
+          find build/ios/archive -name Info.plist -print -exec /usr/libexec/PlistBuddy -c "Print" {} \; || true
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - build/ios/archive/**/*.xcarchive
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+

@@ -209,18 +209,20 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _loginWithBiometrics() async {
     setState(() => _loading = true);
     try {
+      final auth = context.read<AuthController>();
+      final router = GoRouter.of(context);
       final creds = await _biometric.authenticateAndLoad(reason: 'Use sua biometria para entrar no Medisom Console.');
       if (creds == null) return;
       _email.text = creds.email;
       _password.text = creds.password;
-      await context.read<AuthController>().signIn(email: creds.email, password: creds.password);
+      await auth.signIn(email: creds.email, password: creds.password);
 
       if (!mounted) return;
 
       // Ensure we leave the auth screen immediately after a successful biometric sign-in.
       // The router redirect will also enforce the correct destination, but this makes
       // the UX feel instant and avoids any “stuck on login” perception.
-      context.go(AppRoutes.devices);
+      router.go(AppRoutes.devices);
     } catch (e) {
       debugPrint('Login biométrico falhou: $e');
       if (!mounted) return;

@@ -26,7 +26,6 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
   bool _syncScheduled = false;
   bool _isInForeground = true;
   bool _resumeReloadPending = false;
-  Uri? _lastLoadedUri;
 
   @override
   bool get wantKeepAlive => true;
@@ -171,7 +170,6 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
         });
         return;
       }
-      _lastLoadedUri = uri;
 
       final c = WebViewController();
       c.setJavaScriptMode(JavaScriptMode.unrestricted);

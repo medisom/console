@@ -175,6 +175,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
       // Prefer Uri.https to avoid any subtle parsing issues.
       final uri = Uri.https('medisom.com.br', '/iot/app/request-verification-code');
+
+       debugPrint('request-verification-code: POST $uri');
+       debugPrint('request-verification-code: payload=${jsonEncode(payload)}');
       final resp = await http
           .post(
             uri,
@@ -191,10 +194,18 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (resp.statusCode >= 200 && resp.statusCode < 300) {
         // Após 200 OK: abrir a tela de digitação do código (6 dígitos).
-        context.push(
-          AppRoutes.verifyCode,
-          extra: VerifyCodeExtra(email: email, userId: userId, deviceId: deviceId),
-        );
+        final loc = Uri(
+          path: AppRoutes.verifyCode,
+          queryParameters: {
+            'e_mail': email,
+            'user_id': userId,
+            if (deviceId.isNotEmpty) 'device_id': deviceId,
+          },
+        ).toString();
+
+        // We still pass `extra` for normal in-session navigation, but the query params
+        // make the flow resilient if iOS restores the route without `extra`.
+        context.push(loc, extra: VerifyCodeExtra(email: email, userId: userId, deviceId: deviceId));
       } else if (resp.statusCode == 409) {
         final bodyText = _decodeResponseBody(resp);
         debugPrint('request-verification-code conflict: ${resp.statusCode} $bodyText');
@@ -236,9 +247,26 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('request-verification-code unexpected error: $e');
+      debugPrintStack(stackTrace: st);
       if (!mounted) return;
+
+      final msg = e.toString();
+      final isCorsOrWebBlocked = kIsWeb && (msg.contains('XMLHttpRequest') || msg.contains('CORS') || msg.contains('Origin') || msg.contains('Failed to fetch'));
+      if (isCorsOrWebBlocked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No navegador, a chamada pode estar bloqueada (CORS/rede).')),
+        );
+        return;
+      }
+
+      if (kDebugMode) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao solicitar código: $msg')),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Erro ao solicitar código. Tente novamente.')),
       );

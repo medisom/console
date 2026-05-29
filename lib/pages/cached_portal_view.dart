@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:medisom_console/auth/auth_controller.dart';
 import 'package:medisom_console/sensors/sensor_service.dart';
 import 'package:medisom_console/theme.dart';
-import 'package:medisom_console/utils/portal_launcher.dart';
+import 'package:medisom_console/utils/portal_postmessage_bridge.dart';
+import 'package:medisom_console/widgets/iframe_portal_view.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -30,6 +31,21 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
   WebViewController? _controller;
   bool _isLoading = true;
   String? _error;
+  String? _webUrl;
+  Timer? _webLoadTimeout;
+  PortalBridgeDisposer? _webBridgeDisposer;
+
+  void _scheduleWebLoadTimeout() {
+    _webLoadTimeout?.cancel();
+    // iframe onLoad is not reliable across browsers/cross-origin pages.
+    // Keep the progress indicator short-lived so it never gets stuck.
+    _webLoadTimeout = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      if (!_isLoading) return;
+      debugPrint('CachedPortalView(${widget.sensorId}) iframe load timeout; hiding progress indicator.');
+      setState(() => _isLoading = false);
+    });
+  }
 
   Future<void> _handleDeleteWebViewRequest() async {
     try {
@@ -50,28 +66,27 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
     }
   }
 
-  static const String _disableUserDragJs = """
+  /// iOS-only: keep the portal feeling “kiosk-like” while still allowing
+  /// **vertical scrolling**.
+  ///
+  /// Previously we fully disabled touch/scroll to avoid rubber-banding. Now we
+  /// allow `pan-y` so the user can scroll content vertically.
+  static const String _restrictToVerticalScrollJs = """
 (function() {
   try {
     const style = document.createElement('style');
     style.type = 'text/css';
     style.innerHTML = `
       html, body {
-        overscroll-behavior: none !important;
-        -webkit-overflow-scrolling: auto !important;
-        overflow: hidden !important;
-        touch-action: none !important;
-      }
-      * {
-        -webkit-user-select: none !important;
-        user-select: none !important;
+        overscroll-behavior-y: contain !important;
+        overscroll-behavior-x: none !important;
+        -webkit-overflow-scrolling: touch !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        touch-action: pan-y !important;
       }
     `;
     document.head && document.head.appendChild(style);
-
-    const prevent = function(e) { e.preventDefault(); };
-    window.addEventListener('touchmove', prevent, { passive: false });
-    window.addEventListener('scroll', function() { window.scrollTo(0, 0); });
   } catch (e) {
     // Ignore
   }
@@ -84,7 +99,32 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
   @override
   void initState() {
     super.initState();
+
+    // On Web, the portal runs inside an iframe. The iframe cannot access
+    // `window.Nativo`, so it can `postMessage` to the parent and we bridge it.
+    if (kIsWeb) {
+      _webBridgeDisposer = registerPortalPostMessageBridge(
+        onCloseRequested: () {
+          if (!mounted) return;
+          debugPrint('CachedPortalView(${widget.sensorId}) close requested via postMessage bridge');
+          widget.onRequestClose();
+        },
+        onDeleteRequested: () {
+          if (!mounted) return;
+          debugPrint('CachedPortalView(${widget.sensorId}) delete requested via postMessage bridge');
+          unawaited(_handleDeleteWebViewRequest());
+        },
+      );
+    }
+
     _init();
+  }
+
+  @override
+  void dispose() {
+    _webLoadTimeout?.cancel();
+    _webBridgeDisposer?.call();
+    super.dispose();
   }
 
   @override
@@ -92,7 +132,16 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
     super.didUpdateWidget(oldWidget);
     // If the URL changes for an already-opened portal, reload in-place.
     if (oldWidget.url.trim() != widget.url.trim() && widget.url.trim().isNotEmpty) {
-      unawaited(_reloadUrl(widget.url.trim()));
+      if (kIsWeb) {
+        setState(() {
+          _webUrl = widget.url.trim();
+          _isLoading = true;
+          _error = null;
+        });
+        _scheduleWebLoadTimeout();
+      } else {
+        unawaited(_reloadUrl(widget.url.trim()));
+      }
     }
   }
 
@@ -106,21 +155,15 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
       return;
     }
 
-    // WebView inside the app is not available on Flutter Web.
+    // On Web, render the portal inside the app using an iframe.
     if (kIsWeb) {
-      try {
-        await openPortalReplace(url);
-      } catch (e) {
-        debugPrint('CachedPortalView openPortalReplace failed: $e');
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _error = 'Não foi possível abrir o portal.';
-          });
-        }
-        return;
-      }
-      if (mounted) widget.onRequestClose();
+      if (!mounted) return;
+      setState(() {
+        _webUrl = url;
+        _isLoading = true;
+        _error = null;
+      });
+      _scheduleWebLoadTimeout();
       return;
     }
 
@@ -184,13 +227,13 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
             },
             onPageFinished: (_) {
               if (!mounted) return;
-              // On iOS, prevent the typical "drag" / rubber-banding / scrolling.
-              // This is requested for kiosk-like portal usage.
+              // On iOS, reduce rubber-banding while still allowing vertical
+              // scrolling inside the portal.
               if (defaultTargetPlatform == TargetPlatform.iOS) {
                 unawaited(
                   _controller
-                          ?.runJavaScript(_disableUserDragJs)
-                          .catchError((e) => debugPrint('CachedPortalView iOS disable-drag JS failed: $e')) ??
+                          ?.runJavaScript(_restrictToVerticalScrollJs)
+                          .catchError((e) => debugPrint('CachedPortalView iOS scroll JS failed: $e')) ??
                       Future<void>.value(),
                 );
               }
@@ -267,9 +310,21 @@ class _CachedPortalViewState extends State<CachedPortalView> with AutomaticKeepA
                 bottom: false,
                 child: _error != null
                     ? _PortalErrorState(message: _error!, onBack: widget.onRequestClose)
-                    : (_controller == null)
-                        ? const SizedBox.shrink()
-                        : WebViewWidget(controller: _controller!),
+                    : kIsWeb
+                        ? (_webUrl == null)
+                            ? const SizedBox.shrink()
+                            : IFramePortalView(
+                                url: _webUrl!,
+                                backgroundColor: Colors.black,
+                                onLoad: () {
+                                  if (!mounted) return;
+                                  _webLoadTimeout?.cancel();
+                                  setState(() => _isLoading = false);
+                                },
+                              )
+                        : (_controller == null)
+                            ? const SizedBox.shrink()
+                            : WebViewWidget(controller: _controller!),
               ),
             ),
             if (_isLoading)

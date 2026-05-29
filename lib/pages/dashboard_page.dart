@@ -22,7 +22,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver, RouteAware {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver, RouteAware {
   final SensorService _sensorService = SensorService();
 
   String _currentEmail = '';
@@ -43,7 +44,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
   late final VoidCallback _sensorsRevisionListener;
 
-  static const String _prefsKeyCameraPromptShown = 'camera_permission_prompt_shown_v1';
+  static const String _prefsKeyCameraPromptShown =
+      'camera_permission_prompt_shown_v1';
 
   @override
   void initState() {
@@ -186,10 +188,13 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
             title: const Text('Permitir câmera?'),
             content: Text(
               'A câmera será usada para ler QR Codes dos dispositivos Medisom.',
-              style: dialogContext.textStyles.bodyMedium?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
+              style: dialogContext.textStyles.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
             ),
             actions: [
-              TextButton(onPressed: () => dialogContext.pop(false), child: const Text('Agora não')),
+              TextButton(
+                  onPressed: () => dialogContext.pop(false),
+                  child: const Text('Agora não')),
               FilledButton(
                 onPressed: () => dialogContext.pop(true),
                 style: FilledButton.styleFrom(backgroundColor: cs.primary),
@@ -207,7 +212,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       if (!mounted) return;
       setState(() => _cameraPermissionGranted = requestStatus.isGranted);
     } catch (e) {
-      debugPrint('DashboardPage._checkAndMaybePromptCameraPermission failed: $e');
+      debugPrint(
+          'DashboardPage._checkAndMaybePromptCameraPermission failed: $e');
       // If permission checks fail (plugin issues), don't block dashboard usage.
       if (mounted) setState(() => _cameraPermissionGranted = true);
     } finally {
@@ -231,14 +237,18 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               title: const Text('Câmera bloqueada'),
               content: Text(
                 'A permissão de câmera está bloqueada nas configurações do sistema.\n\nAbra as configurações do app para liberar a câmera e conseguir escanear QR Codes.',
-                style: dialogContext.textStyles.bodyMedium?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
+                style: dialogContext.textStyles.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
               ),
               actions: [
-                TextButton(onPressed: () => dialogContext.pop(false), child: const Text('Fechar')),
+                TextButton(
+                    onPressed: () => dialogContext.pop(false),
+                    child: const Text('Fechar')),
                 FilledButton(
                   onPressed: () => dialogContext.pop(true),
                   style: FilledButton.styleFrom(backgroundColor: cs.primary),
-                  child: Text('Abrir configurações', style: TextStyle(color: cs.onPrimary)),
+                  child: Text('Abrir configurações',
+                      style: TextStyle(color: cs.onPrimary)),
                 ),
               ],
             );
@@ -318,7 +328,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       if (email.trim().isEmpty) return;
 
       final deviceId = await AppIdentity.getOrCreateDeviceId();
-      final finalUserId = (userId != null && userId.trim().isNotEmpty) ? userId.trim() : await AppIdentity.getOrCreateUserId();
+      final finalUserId = (userId != null && userId.trim().isNotEmpty)
+          ? userId.trim()
+          : await AppIdentity.getOrCreateUserId();
 
       // Sequential POSTs: one by one.
       for (final existing in List<Sensor>.from(_sensors)) {
@@ -335,7 +347,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
           final now = DateTime.now();
           final updated = existing.copyWith(
-            sensorId: result.sensorId.isNotEmpty ? result.sensorId : existing.sensorId,
+            sensorId: result.sensorId.isNotEmpty
+                ? result.sensorId
+                : existing.sensorId,
             clientId: result.clientId,
             email: email,
             portalUrl: result.portalUrl,
@@ -352,7 +366,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           await _sensorService.upsertSensor(email: email, sensor: updated);
         } catch (e) {
           // Keep refreshing the remaining sensors even if one fails.
-          debugPrint('DashboardPage._refreshAllSensors failed for ${existing.sensorId}: $e');
+          debugPrint(
+              'DashboardPage._refreshAllSensors failed for ${existing.sensorId}: $e');
         }
       }
 
@@ -378,16 +393,20 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Adicionar sensor', style: context.textStyles.titleMedium?.copyWith(height: 1.2)),
+                Text('Adicionar sensor',
+                    style:
+                        context.textStyles.titleMedium?.copyWith(height: 1.2)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Escolha como você deseja cadastrar um novo sensor.',
-                  style: context.textStyles.bodyMedium?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
+                  style: context.textStyles.bodyMedium
+                      ?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _SheetActionTile(
@@ -418,7 +437,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       debugPrint('DashboardPage._scanQr failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o leitor de QR.')),
+          const SnackBar(
+              content: Text('Não foi possível abrir o leitor de QR.')),
         );
       }
       return null;
@@ -434,14 +454,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     final userId = auth.user?.id;
     if (email.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('E-mail da conta não encontrado.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('E-mail da conta não encontrado.')));
       }
       return;
     }
 
     // Prevent adding a sensor that is already stored locally.
     try {
-      final alreadyInMemory = _sensors.any((s) => s.sensorId.trim() == trimmedQr);
+      final alreadyInMemory =
+          _sensors.any((s) => s.sensorId.trim() == trimmedQr);
       if (alreadyInMemory) {
         if (!mounted) return;
         await _showSensorAlreadyExistsDialog(trimmedQr);
@@ -468,31 +490,33 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
     try {
       final deviceId = await AppIdentity.getOrCreateDeviceId();
-      final finalUserId = (userId != null && userId.trim().isNotEmpty) ? userId.trim() : await AppIdentity.getOrCreateUserId();
+      final finalUserId = (userId != null && userId.trim().isNotEmpty)
+          ? userId.trim()
+          : await AppIdentity.getOrCreateUserId();
 
-       final result = await _sensorService.addSensor(
-         sensorId: trimmedQr,
-         userId: finalUserId,
-         deviceId: deviceId,
-         email: email,
-         appVersion: AppIdentity.appVersion,
-         insert: true,
-       );
+      final result = await _sensorService.addSensor(
+        sensorId: trimmedQr,
+        userId: finalUserId,
+        deviceId: deviceId,
+        email: email,
+        appVersion: AppIdentity.appVersion,
+        insert: true,
+      );
 
       final now = DateTime.now();
       final sensor = Sensor(
-         sensorId: result.sensorId.isNotEmpty ? result.sensorId : trimmedQr,
+        sensorId: result.sensorId.isNotEmpty ? result.sensorId : trimmedQr,
         clientId: result.clientId,
         email: email,
         portalUrl: result.portalUrl,
-         local: result.local,
-         enabled: result.enabled,
-         lastUpdate: result.lastUpdate,
-         limit: result.limit,
-         weighting: result.weighting,
-         percentAboveLimit: result.percentAboveLimit,
-         leq1Min: result.leq1Min,
-         monitor: result.monitor,
+        local: result.local,
+        enabled: result.enabled,
+        lastUpdate: result.lastUpdate,
+        limit: result.limit,
+        weighting: result.weighting,
+        percentAboveLimit: result.percentAboveLimit,
+        leq1Min: result.leq1Min,
+        monitor: result.monitor,
         createdAt: now,
         updatedAt: now,
       );
@@ -501,7 +525,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       if (!mounted) return;
       setState(() => _sensors = refreshed);
     } on SensorException catch (e) {
-      debugPrint('DashboardPage._addSensorFromQr SensorException: ${e.message}');
+      debugPrint(
+          'DashboardPage._addSensorFromQr SensorException: ${e.message}');
       if (!mounted) return;
       setState(() => _error = e.message);
     } catch (e) {
@@ -538,43 +563,46 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     try {
       final url = sensor.portalUrl.trim();
       if (url.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Este sensor não possui URL de portal.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Este sensor não possui URL de portal.')));
         return;
       }
-      context.read<OpenPortalsController>().openOrActivate(sensorId: sensor.sensorId, url: url, title: sensor.clientId);
+      context.read<OpenPortalsController>().openOrActivate(
+          sensorId: sensor.sensorId, url: url, title: sensor.clientId);
     } catch (e) {
       debugPrint('DashboardPage._openSensor failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o sensor.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Não foi possível abrir o sensor.')));
       }
     }
   }
 
   Future<void> _confirmAndDeleteSensor(Sensor sensor) async {
     final cs = Theme.of(context).colorScheme;
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: const Text('Excluir sensor?'),
-            content: Text(
-              'Deseja excluir este sensor do seu app?\n\n${sensor.clientId.isNotEmpty ? sensor.clientId : sensor.sensorId}',
-              style: dialogContext.textStyles.bodyMedium?.copyWith(height: 1.45),
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Excluir sensor?'),
+          content: Text(
+            'Deseja excluir este sensor do seu app?\n\n${sensor.clientId.isNotEmpty ? sensor.clientId : sensor.sensorId}',
+            style: dialogContext.textStyles.bodyMedium?.copyWith(height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => dialogContext.pop(false),
+              child: const Text('Cancelar'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => dialogContext.pop(false),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () => dialogContext.pop(true),
-                style: TextButton.styleFrom(foregroundColor: cs.error),
-                child: const Text('Excluir'),
-              ),
-            ],
-          );
-        },
-      );
+            TextButton(
+              onPressed: () => dialogContext.pop(true),
+              style: TextButton.styleFrom(foregroundColor: cs.error),
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
 
     if (ok != true) return;
 
@@ -583,14 +611,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
     try {
       final email = (context.read<AuthController>().user?.email ?? '').trim();
       if (email.isEmpty) return;
-      await _sensorService.deleteSensor(email: email, sensorId: sensor.sensorId);
+      await _sensorService.deleteSensor(
+          email: email, sensorId: sensor.sensorId);
       final refreshed = await _sensorService.listSensors(email: email);
       if (!mounted) return;
       setState(() => _sensors = refreshed);
     } catch (e) {
       debugPrint('DashboardPage._confirmAndDeleteSensor failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível excluir o sensor.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível excluir o sensor.')));
     }
   }
 
@@ -633,8 +663,10 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
       context: context,
       builder: (dialogContext) {
         final cs = Theme.of(dialogContext).colorScheme;
-        final labelStyle = dialogContext.textStyles.bodySmall?.copyWith(color: cs.onSurfaceVariant, height: 1.25);
-        final valueStyle = dialogContext.textStyles.bodySmall?.copyWith(color: cs.onSurface, height: 1.25, fontWeight: FontWeight.w600);
+        final labelStyle = dialogContext.textStyles.bodySmall
+            ?.copyWith(color: cs.onSurfaceVariant, height: 1.25);
+        final valueStyle = dialogContext.textStyles.bodySmall?.copyWith(
+            color: cs.onSurface, height: 1.25, fontWeight: FontWeight.w600);
 
         Widget row(String label, String value) {
           return Padding(
@@ -642,8 +674,7 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 140, child: Text(label, style: labelStyle)),
-                Expanded(child: Text(value, style: valueStyle)),
+                SizedBox(width: 140, child: Text(label, style: labelStyle))
               ],
             ),
           );
@@ -661,7 +692,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                   row('Status:', formatStatus(sensor.enabled)),
                   row('Ultimo update:', formatPtBrDateTime(sensor.lastUpdate)),
                   row('Limite:', formatWithUnit(sensor.limit)),
-                  row('% Acima do Limite:', formatNum(sensor.percentAboveLimit)),
+                  row('% Acima do Limite:',
+                      formatNum(sensor.percentAboveLimit)),
                   row('Leq(1min):', formatWithUnit(sensor.leq1Min)),
                   row('Monitor:', formatMonitor(sensor.monitor)),
                 ],
@@ -669,7 +701,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
             ),
           ),
           actions: [
-            TextButton(onPressed: () => dialogContext.pop(), child: const Text('OK')),
+            TextButton(
+                onPressed: () => dialogContext.pop(), child: const Text('OK')),
           ],
         );
       },
@@ -699,7 +732,8 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (!_cameraPermissionGranted) ...[
-                  _CameraPermissionBanner(onEnable: _requestCameraPermissionFromBanner),
+                  _CameraPermissionBanner(
+                      onEnable: _requestCameraPermissionFromBanner),
                   const SizedBox(height: AppSpacing.md),
                 ],
                 if (_error != null) ...[
@@ -712,14 +746,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                           child: SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.4, color: cs.primary),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.4, color: cs.primary),
                           ),
                         )
                       : _sensors.isEmpty
                           ? _EmptyState(isAdding: _isAdding)
                           : ListView.separated(
                               itemCount: _sensors.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.md),
                               itemBuilder: (context, i) {
                                 final s = _sensors[i];
                                 return _SensorTile(
@@ -757,14 +793,17 @@ class _EmptyState extends StatelessWidget {
           children: [
             Icon(Icons.sensors, size: 44, color: cs.onSurfaceVariant),
             const SizedBox(height: AppSpacing.md),
-            Text('Nenhum sensor cadastrado', style: context.textStyles.titleMedium, textAlign: TextAlign.center),
+            Text('Nenhum sensor cadastrado',
+                style: context.textStyles.titleMedium,
+                textAlign: TextAlign.center),
             const SizedBox(height: AppSpacing.sm),
             Text(
               isAdding
                   ? 'Estamos cadastrando o seu sensor...'
                   : 'Toque em "+" para adicionar um sensor',
               textAlign: TextAlign.center,
-              style: context.textStyles.bodyMedium?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
+              style: context.textStyles.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant, height: 1.45),
             ),
           ],
         ),
@@ -774,7 +813,12 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _SensorTile extends StatelessWidget {
-  const _SensorTile({required this.sensor, required this.isOnline, required this.onTap, required this.onDelete, required this.onDetails});
+  const _SensorTile(
+      {required this.sensor,
+      required this.isOnline,
+      required this.onTap,
+      required this.onDelete,
+      required this.onDetails});
 
   final Sensor sensor;
   final bool isOnline;
@@ -800,12 +844,16 @@ class _SensorTile extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(14)),
                 alignment: Alignment.center,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Align(child: Icon(Icons.wifi_tethering, color: cs.onPrimaryContainer)),
+                    Align(
+                        child: Icon(Icons.wifi_tethering,
+                            color: cs.onPrimaryContainer)),
                     if (isOnline)
                       Positioned(
                         right: -2,
@@ -830,14 +878,18 @@ class _SensorTile extends StatelessWidget {
                   children: [
                     Text(
                       sensor.clientId,
-                      style: context.textStyles.titleSmall?.copyWith(height: 1.15),
+                      style:
+                          context.textStyles.titleSmall?.copyWith(height: 1.15),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      sensor.local.trim().isNotEmpty ? sensor.local.trim() : sensor.sensorId,
-                      style: context.textStyles.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      sensor.local.trim().isNotEmpty
+                          ? sensor.local.trim()
+                          : sensor.sensorId,
+                      style: context.textStyles.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -875,7 +927,8 @@ class _SensorTile extends StatelessWidget {
                   ];
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                   child: Icon(Icons.more_vert, color: cs.onSurfaceVariant),
                 ),
               ),
@@ -910,7 +963,8 @@ class _InlineError extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: context.textStyles.bodyMedium?.copyWith(color: cs.onErrorContainer, height: 1.35),
+              style: context.textStyles.bodyMedium
+                  ?.copyWith(color: cs.onErrorContainer, height: 1.35),
             ),
           ),
         ],
@@ -943,11 +997,14 @@ class _CameraPermissionBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Câmera desativada', style: context.textStyles.titleSmall?.copyWith(height: 1.15)),
+                Text('Câmera desativada',
+                    style:
+                        context.textStyles.titleSmall?.copyWith(height: 1.15)),
                 const SizedBox(height: 4),
                 Text(
                   'Para escanear o QR-code do sensor, o app precisa de acesso à câmera.',
-                  style: context.textStyles.bodySmall?.copyWith(color: cs.onSurfaceVariant, height: 1.35),
+                  style: context.textStyles.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant, height: 1.35),
                 ),
               ],
             ),
@@ -957,8 +1014,10 @@ class _CameraPermissionBanner extends StatelessWidget {
             onPressed: onEnable,
             style: FilledButton.styleFrom(
               backgroundColor: cs.primary,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg)),
             ),
             child: Text('Ativar', style: TextStyle(color: cs.onPrimary)),
           ),
@@ -969,7 +1028,11 @@ class _CameraPermissionBanner extends StatelessWidget {
 }
 
 class _SheetActionTile extends StatelessWidget {
-  const _SheetActionTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const _SheetActionTile(
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
 
   final IconData icon;
   final String title;
@@ -1007,9 +1070,13 @@ class _SheetActionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: context.textStyles.titleSmall?.copyWith(height: 1.15)),
+                    Text(title,
+                        style: context.textStyles.titleSmall
+                            ?.copyWith(height: 1.15)),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: context.textStyles.bodySmall?.copyWith(color: cs.onSurfaceVariant, height: 1.3)),
+                    Text(subtitle,
+                        style: context.textStyles.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant, height: 1.3)),
                   ],
                 ),
               ),

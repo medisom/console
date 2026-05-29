@@ -118,8 +118,13 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   Future<void> _validateCode() async {
     final extra = _extra;
     if (extra == null) {
+      debugPrint('VerifyCodePage: missing navigation extra (email/user_id/device_id).');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dados inválidos. Volte e tente novamente.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão de verificação expirada. Volte e solicite o código novamente.'),
+        ),
+      );
       return;
     }
 
@@ -185,7 +190,15 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
           if ((decoded['success'] == true || decoded['success']?.toString() == 'true') && userId.isNotEmpty) {
             await Future<void>.delayed(const Duration(milliseconds: 250));
             if (!mounted) return;
-            context.go(AppRoutes.setPassword, extra: {
+            final loc = Uri(
+              path: AppRoutes.setPassword,
+              queryParameters: {
+                'user_id': userId,
+                if (deviceId.isNotEmpty) 'device_id': deviceId,
+                'e_mail': eMail,
+              },
+            ).toString();
+            context.go(loc, extra: {
               'user_id': userId,
               'device_id': deviceId,
               'e_mail': eMail,

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:medisom_console/auth/auth_controller.dart';
 import 'package:medisom_console/nav.dart';
 import 'package:medisom_console/theme.dart';
-import 'package:medisom_console/utils/portal_launcher.dart';
+import 'package:medisom_console/widgets/iframe_portal_view.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -23,9 +23,11 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
   bool _isLoading = true;
   String? _error;
   String? _activeEmail;
+  String? _webUrl;
   bool _syncScheduled = false;
   bool _isInForeground = true;
   bool _resumeReloadPending = false;
+  Timer? _webLoadTimeout;
 
   @override
   bool get wantKeepAlive => true;
@@ -39,7 +41,21 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _webLoadTimeout?.cancel();
     super.dispose();
+  }
+
+  void _scheduleWebLoadTimeout() {
+    _webLoadTimeout?.cancel();
+    // On Flutter Web, iframe onLoad is not 100% reliable across browsers and
+    // cross-origin pages. Keep the progress indicator short-lived so it never
+    // gets stuck indefinitely.
+    _webLoadTimeout = Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
+      if (!_isLoading) return;
+      debugPrint('MeasurementsPage iframe load timeout; hiding progress indicator.');
+      setState(() => _isLoading = false);
+    });
   }
 
   @override
@@ -128,7 +144,14 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
       return;
     }
 
-    if (_activeEmail == email && _controller != null) return;
+    // On Web we don't use WebViewController, so `_controller` stays null.
+    // If we keep using the native guard, we'll re-init on every rebuild and
+    // keep the loading indicator stuck.
+    if (kIsWeb) {
+      if (_activeEmail == email && (_webUrl ?? '').isNotEmpty) return;
+    } else {
+      if (_activeEmail == email && _controller != null) return;
+    }
     _activeEmail = email;
     await _initForEmail(email);
   }
@@ -137,27 +160,21 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
     final url = _buildConsoleUrl(email: email);
     setState(() {
       _controller = null;
+      _webUrl = null;
       _isLoading = true;
       _error = null;
     });
 
-    // WebView inside the app is not available on Flutter Web.
+    // On Web, render the portal inside the app using an iframe (instead of
+    // redirecting the whole SPA to an external page).
     if (kIsWeb) {
-      try {
-        await openPortalReplace(url);
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _error = 'Abrindo no navegador…';
-        });
-      } catch (e) {
-        debugPrint('MeasurementsPage openPortalReplace failed: $e');
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-          _error = 'Não foi possível abrir Medições.';
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _webUrl = url;
+        _isLoading = true;
+        _error = null;
+      });
+      _scheduleWebLoadTimeout();
       return;
     }
 
@@ -283,9 +300,69 @@ class _MeasurementsPageState extends State<MeasurementsPage> with AutomaticKeepA
                 bottom: false,
                 child: _error != null
                     ? _MeasurementsErrorState(message: _error!, onBack: _closeToDevices)
-                    : (_controller == null)
-                        ? const SizedBox.shrink()
-                        : WebViewWidget(controller: _controller!),
+                    : kIsWeb
+                        ? (_webUrl == null)
+                            ? const SizedBox.shrink()
+                            : Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: IFramePortalView(
+                                      url: _webUrl!,
+                                      backgroundColor: Colors.black,
+                                      onLoad: () {
+                                        if (!mounted) return;
+                                        _webLoadTimeout?.cancel();
+                                        setState(() => _isLoading = false);
+                                      },
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: AppSpacing.lg,
+                                    top: AppSpacing.lg,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: cs.surfaceContainerHighest.withValues(alpha: 0.30),
+                                        borderRadius: BorderRadius.circular(AppRadius.md),
+                                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.25)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            tooltip: 'Recarregar',
+                                            onPressed: () {
+                                              final current = Uri.tryParse(_webUrl!);
+                                              if (current == null) return;
+                                              final next = current.replace(queryParameters: {
+                                                ...current.queryParameters,
+                                                '_ts': DateTime.now().millisecondsSinceEpoch.toString(),
+                                              });
+                                              setState(() {
+                                                _isLoading = true;
+                                                _webUrl = next.toString();
+                                              });
+                                            _scheduleWebLoadTimeout();
+                                            },
+                                            icon: Icon(Icons.refresh, color: cs.onSurfaceVariant),
+                                          ),
+                                          IconButton(
+                                            tooltip: 'Abrir no navegador',
+                                            onPressed: () {
+                                              final uri = Uri.tryParse(_webUrl!);
+                                              if (uri == null) return;
+                                              unawaited(_launchExternal(uri));
+                                            },
+                                            icon: Icon(Icons.open_in_new, color: cs.onSurfaceVariant),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                        : (_controller == null)
+                            ? const SizedBox.shrink()
+                            : WebViewWidget(controller: _controller!),
               ),
             ),
             if (_isLoading)

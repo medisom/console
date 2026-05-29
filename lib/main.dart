@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:medisom_console/auth/auth_controller.dart';
 import 'package:medisom_console/nav.dart';
 import 'package:medisom_console/theme.dart';
+import 'package:medisom_console/utils/fullscreen_controller.dart';
 import 'package:medisom_console/utils/open_portals_controller.dart';
 
 /// Main entry point for the application
@@ -63,6 +64,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       providers: [
         ChangeNotifierProvider.value(value: _auth),
         ChangeNotifierProvider(create: (_) => OpenPortalsController()),
+        ChangeNotifierProvider(create: (_) => FullscreenController()..initialize()),
       ],
       child: Builder(
         builder: (context) {

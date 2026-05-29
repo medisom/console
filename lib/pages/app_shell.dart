@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:medisom_console/theme.dart';
+import 'package:medisom_console/utils/fullscreen_controller.dart';
 import 'package:medisom_console/utils/open_portals_controller.dart';
 
 class AppShell extends StatelessWidget {
@@ -14,6 +15,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final currentIndex = navigationShell.currentIndex;
+    final fullscreen = context.watch<FullscreenController>();
 
     final navBarTheme = NavigationBarThemeData(
       indicatorColor: cs.primaryContainer.withValues(alpha: 0.65),
@@ -38,6 +40,32 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       body: navigationShell,
+      floatingActionButton: fullscreen.isSupported
+          ? Theme(
+              data: Theme.of(context).copyWith(
+                splashFactory: NoSplash.splashFactory,
+                highlightColor: Colors.transparent,
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: FloatingActionButton(
+                  key: ValueKey(fullscreen.isFullscreen),
+                  tooltip: fullscreen.isFullscreen ? 'Sair da tela cheia' : 'Tela cheia',
+                  onPressed: fullscreen.toggle,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
+                  elevation: 0,
+                  child: Icon(fullscreen.isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+                ),
+              ),
+            )
+          : null,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
           color: cs.surface,

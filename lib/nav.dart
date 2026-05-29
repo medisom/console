@@ -72,14 +72,18 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.verifyCode,
           pageBuilder: (context, state) {
-            final extra = state.extra;
+            // IMPORTANT: GoRouter `extra` is not persisted if the OS kills/restores the app
+            // (this happens more often on iOS). To make this flow resilient, we also accept
+            // required fields via query params.
+            final extra = state.extra ?? state.uri.queryParameters;
             return _fade(state, VerifyCodePage(extra: extra));
           },
         ),
         GoRoute(
           path: AppRoutes.setPassword,
           pageBuilder: (context, state) {
-            final extra = state.extra;
+            // Same resilience strategy as /verify-code.
+            final extra = state.extra ?? state.uri.queryParameters;
             return _fade(state, SetPasswordPage(extra: extra));
           },
         ),

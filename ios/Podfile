@@ -39,6 +39,13 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
+    # Some pods still declare very old minimum iOS versions (e.g. 9.0).
+    # This breaks builds with modern plugins (e.g. flutter_secure_storage_darwin
+    # uses CryptoKit APIs that require iOS 13+). Force a consistent minimum.
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+    end
+
     # permission_handler (via permission_handler_apple) uses preprocessor flags to include
     # only the permissions you need.
     # Ref: https://pub.dev/packages/permission_handler

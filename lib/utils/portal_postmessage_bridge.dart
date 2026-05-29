@@ -14,7 +14,6 @@ import 'package:medisom_console/utils/portal_postmessage_bridge_stub.dart'
 /// when the hosting page provides it.
 ///
 /// Returns a disposer callback that MUST be called from `dispose()`.
-@visibleForTesting
 typedef PortalBridgeDisposer = VoidCallback;
 
 PortalBridgeDisposer registerPortalPostMessageBridge({required VoidCallback onCloseRequested, required VoidCallback onDeleteRequested}) {

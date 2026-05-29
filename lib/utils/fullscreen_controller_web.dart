@@ -1,5 +1,4 @@
 import 'dart:js_interop';
-import 'dart:js_util' as js_util;
 
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
@@ -8,11 +7,9 @@ typedef FullscreenDisposer = VoidCallback;
 
 bool fullscreenIsSupportedImpl() {
   try {
-    // Prefer feature detection via JS properties.
-    final enabled = js_util.getProperty<Object?>(web.document, 'fullscreenEnabled');
-    if (enabled is bool) return enabled;
-    if (enabled == null) return false;
-    return enabled.toString() == 'true';
+    // Feature detection (typed bindings when available).
+    final enabled = web.document.fullscreenEnabled;
+    return enabled == true;
   } catch (_) {
     return false;
   }
@@ -20,8 +17,7 @@ bool fullscreenIsSupportedImpl() {
 
 bool fullscreenIsActiveImpl() {
   try {
-    final el = js_util.getProperty<Object?>(web.document, 'fullscreenElement');
-    return el != null;
+    return web.document.fullscreenElement != null;
   } catch (_) {
     return false;
   }
@@ -31,9 +27,9 @@ Future<void> fullscreenEnterImpl() async {
   try {
     final root = web.document.documentElement;
     if (root == null) return;
-    final promise = js_util.callMethod<Object?>(root, 'requestFullscreen', const <Object?>[]);
-    if (promise == null) return;
-    await js_util.promiseToFuture<void>(promise as Object);
+    // Some browsers return a Promise; we intentionally don't await to avoid
+    // depending on dart:js_util (which isn't available in all toolchains).
+    root.requestFullscreen();
   } catch (e) {
     // Fullscreen requests can fail due to browser restrictions (must be user gesture).
     debugPrint('Fullscreen: requestFullscreen failed: $e');
@@ -42,9 +38,7 @@ Future<void> fullscreenEnterImpl() async {
 
 Future<void> fullscreenExitImpl() async {
   try {
-    final promise = js_util.callMethod<Object?>(web.document, 'exitFullscreen', const <Object?>[]);
-    if (promise == null) return;
-    await js_util.promiseToFuture<void>(promise as Object);
+    web.document.exitFullscreen();
   } catch (e) {
     debugPrint('Fullscreen: exitFullscreen failed: $e');
   }

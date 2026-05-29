@@ -1,5 +1,5 @@
 import 'dart:js_interop';
-import 'dart:js_util' as js_util;
+import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
@@ -9,15 +9,15 @@ typedef PortalBridgeDisposer = VoidCallback;
 // Matches the user requirement: forward to `window.Nativo.postMessage('fecharWebView')` when possible.
 void _tryForwardToNativoClose() {
   try {
-    final w = web.window;
-    final nativo = js_util.getProperty<Object?>(w, 'Nativo');
-    if (nativo == null) {
+    final w = web.window as JSObject;
+    final nativo = w.getProperty('Nativo'.toJS);
+    if (nativo == null || nativo.isUndefinedOrNull) {
       debugPrint('PortalPostMessageBridge: close received, but window.Nativo is not available.');
       return;
     }
 
     // Try `Nativo.postMessage('fecharWebView')`.
-    js_util.callMethod<Object?>(nativo, 'postMessage', <Object?>['fecharWebView']);
+    (nativo as JSObject).callMethod('postMessage'.toJS, <JSAny?>['fecharWebView'.toJS].toJS);
   } catch (e) {
     debugPrint('PortalPostMessageBridge: failed to forward close to window.Nativo: $e');
   }
@@ -26,14 +26,14 @@ void _tryForwardToNativoClose() {
 // Matches the user requirement: forward to `window.Nativo.postMessage('deleteWebView')` when possible.
 void _tryForwardToNativoDelete() {
   try {
-    final w = web.window;
-    final nativo = js_util.getProperty<Object?>(w, 'Nativo');
-    if (nativo == null) {
+    final w = web.window as JSObject;
+    final nativo = w.getProperty('Nativo'.toJS);
+    if (nativo == null || nativo.isUndefinedOrNull) {
       debugPrint('PortalPostMessageBridge: delete received, but window.Nativo is not available.');
       return;
     }
 
-    js_util.callMethod<Object?>(nativo, 'postMessage', <Object?>['deleteWebView']);
+    (nativo as JSObject).callMethod('postMessage'.toJS, <JSAny?>['deleteWebView'.toJS].toJS);
   } catch (e) {
     debugPrint('PortalPostMessageBridge: failed to forward delete to window.Nativo: $e');
   }
@@ -42,10 +42,14 @@ void _tryForwardToNativoDelete() {
 String? _extractAcao(Object? data) {
   try {
     if (data == null) return null;
-    if (!js_util.hasProperty(data, 'acao')) return null;
-    final acao = js_util.getProperty<Object?>(data, 'acao');
-    if (acao is String) return acao;
-    return acao?.toString();
+    final js = data as JSAny?;
+    if (js == null || js.isUndefinedOrNull) return null;
+    if (js is! JSObject) return null;
+    final acao = js.getProperty('acao'.toJS);
+    if (acao == null || acao.isUndefinedOrNull) return null;
+    // If it's a JS string, `toDart` gives us a Dart string. Otherwise, fallback.
+    if (acao is JSString) return (acao).toDart;
+    return acao.toString();
   } catch (_) {
     return null;
   }
@@ -54,8 +58,9 @@ String? _extractAcao(Object? data) {
 PortalBridgeDisposer registerPortalPostMessageBridgeImpl({required VoidCallback onCloseRequested, required VoidCallback onDeleteRequested}) {
   // Keep a stable listener reference so we can remove it on dispose.
   final web.EventListener listener = ((web.Event event) {
-    if (event is! web.MessageEvent) return;
-    final acao = _extractAcao(event.data);
+    // We're attached to the 'message' event, so this cast is expected.
+    final messageEvent = event as web.MessageEvent;
+    final acao = _extractAcao(messageEvent.data);
     if (acao == null) return;
 
     if (acao == 'fechar_webview_flutter') {

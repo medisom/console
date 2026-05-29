@@ -674,7 +674,9 @@ class _DashboardPageState extends State<DashboardPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 140, child: Text(label, style: labelStyle))
+                SizedBox(width: 140, child: Text(label, style: labelStyle)),
+                const SizedBox(width: 10),
+                Expanded(child: Text(value, style: valueStyle))
               ],
             ),
           );

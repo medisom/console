@@ -1,6 +1,5 @@
 import 'dart:ui_web' as ui;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
 
@@ -78,5 +77,11 @@ class _IFramePortalViewImplState extends State<IFramePortalViewImpl> {
 }
 
 extension on Color {
-  String toCssString() => 'rgba($red,$green,$blue,${(a / 255).toStringAsFixed(3)})';
+  String toCssString() {
+    final rr = (r * 255.0).round().clamp(0, 255);
+    final gg = (g * 255.0).round().clamp(0, 255);
+    final bb = (b * 255.0).round().clamp(0, 255);
+    final aa = a.clamp(0.0, 1.0);
+    return 'rgba($rr,$gg,$bb,${aa.toStringAsFixed(3)})';
+  }
 }

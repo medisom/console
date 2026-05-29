@@ -44,11 +44,12 @@ String? _extractAcao(Object? data) {
     if (data == null) return null;
     final js = data as JSAny?;
     if (js == null || js.isUndefinedOrNull) return null;
-    if (js is! JSObject) return null;
-    final acao = js.getProperty('acao'.toJS);
+    if (!js.isA<JSObject>()) return null;
+    final obj = js as JSObject;
+    final acao = obj.getProperty('acao'.toJS);
     if (acao == null || acao.isUndefinedOrNull) return null;
     // If it's a JS string, `toDart` gives us a Dart string. Otherwise, fallback.
-    if (acao is JSString) return (acao).toDart;
+    if (acao.isA<JSString>()) return (acao as JSString).toDart;
     return acao.toString();
   } catch (_) {
     return null;

@@ -192,11 +192,11 @@
     },
     {
       "name": "flutter_secure_storage",
-      "version": "10.1.0",
+      "version": "9.2.4",
       "dependencies": [
         "flutter",
-        "flutter_secure_storage_darwin",
         "flutter_secure_storage_linux",
+        "flutter_secure_storage_macos",
         "flutter_secure_storage_platform_interface",
         "flutter_secure_storage_web",
         "flutter_secure_storage_windows",
@@ -624,7 +624,7 @@
     },
     {
       "name": "flutter_secure_storage_windows",
-      "version": "4.1.0",
+      "version": "3.1.2",
       "dependencies": [
         "ffi",
         "flutter",
@@ -636,36 +636,36 @@
     },
     {
       "name": "flutter_secure_storage_web",
-      "version": "2.1.1",
+      "version": "1.2.1",
       "dependencies": [
         "flutter",
         "flutter_secure_storage_platform_interface",
         "flutter_web_plugins",
-        "web"
+        "js"
       ]
     },
     {
       "name": "flutter_secure_storage_platform_interface",
-      "version": "2.0.1",
+      "version": "1.1.2",
       "dependencies": [
         "flutter",
         "plugin_platform_interface"
       ]
     },
     {
-      "name": "flutter_secure_storage_linux",
-      "version": "3.0.0",
+      "name": "flutter_secure_storage_macos",
+      "version": "3.1.3",
       "dependencies": [
         "flutter",
         "flutter_secure_storage_platform_interface"
       ]
     },
     {
-      "name": "flutter_secure_storage_darwin",
-      "version": "0.3.0",
+      "name": "flutter_secure_storage_linux",
+      "version": "1.2.3",
       "dependencies": [
         "flutter",
-        "plugin_platform_interface"
+        "flutter_secure_storage_platform_interface"
       ]
     },
     {
@@ -708,17 +708,6 @@
         "leak_tracker",
         "matcher",
         "meta"
-      ]
-    },
-    {
-      "name": "leak_tracker",
-      "version": "11.0.2",
-      "dependencies": [
-        "clock",
-        "collection",
-        "meta",
-        "path",
-        "vm_service"
       ]
     },
     {
@@ -820,6 +809,13 @@
       "dependencies": []
     },
     {
+      "name": "js",
+      "version": "0.6.7",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "petitparser",
       "version": "7.0.2",
       "dependencies": [
@@ -835,11 +831,6 @@
         "meta",
         "path"
       ]
-    },
-    {
-      "name": "vm_service",
-      "version": "15.0.0",
-      "dependencies": []
     },
     {
       "name": "platform",
@@ -869,6 +860,22 @@
         "flutter",
         "path_provider_platform_interface"
       ]
+    },
+    {
+      "name": "leak_tracker",
+      "version": "11.0.2",
+      "dependencies": [
+        "clock",
+        "collection",
+        "meta",
+        "path",
+        "vm_service"
+      ]
+    },
+    {
+      "name": "vm_service",
+      "version": "15.0.0",
+      "dependencies": []
     }
   ],
   "configVersion": 1

@@ -36,14 +36,26 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  # Ensure the Pods project itself also uses a sufficiently high deployment target.
+  # Some Xcode versions can still compile pods using the Pods project's base
+  # settings, so we align both the project and each pod target.
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+  end
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # Some pods still declare very old minimum iOS versions (e.g. 9.0).
-    # This breaks builds with modern plugins (e.g. flutter_secure_storage_darwin
-    # uses CryptoKit APIs that require iOS 13+). Force a consistent minimum.
+    # Keep ALL pods aligned with the app minimum iOS version.
+    # If any pod keeps an older deployment target, Xcode may fail the archive step
+    # when compiling Swift modules (common with secure storage + CryptoKit).
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+
+      # Xcode 16+/Swift 6 can be stricter about concurrency annotations in third-party pods.
+      # These flags keep pods building reliably without affecting app code.
+      config.build_settings['SWIFT_VERSION'] ||= '5.0'
+      config.build_settings['SWIFT_STRICT_CONCURRENCY'] ||= 'minimal'
     end
 
     # permission_handler (via permission_handler_apple) uses preprocessor flags to include
